@@ -1,5 +1,7 @@
 # Balatro Soul Reroller
 
+![Balatro Soul Reroller](banner.png)
+
 An ADB helper that keeps restarting Balatro runs until it finds a **Charm Tag**
 on the Small or Big Blind and then finds **The Soul** in the Arcana Pack it
 opens.
@@ -72,6 +74,7 @@ The one-time setup is documented in [FirstTime.md](FirstTime.md).
 | `reroll.py` | Main detection and reroll loop |
 | `run.sh` | Connects to ADB, prepares the virtual environment, and starts the loop |
 | `notify_soul.sh` | Optional macOS notification and sound when The Soul is found |
+| `banner.png` | README banner image |
 | `tags/` | Learned tag crops and signatures used for log labels |
 | `ref_charm_blind_screen.png` | Calibration/reference screenshot |
 | `requirements.txt` | Python dependency list (`Pillow`) |
