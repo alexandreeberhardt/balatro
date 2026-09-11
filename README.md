@@ -1,6 +1,6 @@
 # Balatro Soul Reroller
 
-![Balatro Soul Reroller](banner.png)
+<img src="banner.png" alt="Balatro Soul Reroller" width="700">
 
 An ADB helper that keeps restarting Balatro runs until it finds a **Charm Tag**
 on the Small or Big Blind and then finds **The Soul** in the Arcana Pack it
