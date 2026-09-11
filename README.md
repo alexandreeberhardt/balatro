@@ -82,8 +82,9 @@ If the phone is not detected, check that wireless debugging is still enabled
 and reconnect with the current `IP:PORT` shown by Android. The pairing port and
 the connection port are different.
 
-If Balatro's layout changes, capture a frame and adjust the constants near the
-top of `reroll.py`:
+If Balatro's layout changes, follow the full [display calibration guide](FirstTime.md#calibrate-a-different-display).
+At minimum, capture a frame and adjust the constants near the top of
+`reroll.py`:
 
 ```sh
 adb exec-out screencap -p > screen.png

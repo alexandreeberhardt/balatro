@@ -1,8 +1,8 @@
 # First-time setup on a new phone
 
-This guide covers a fresh Android phone and a fresh Mac checkout. It assumes
-the phone is a OnePlus 8T (or another device with the same 2400x1080 landscape
-layout). Other screen sizes will need coordinate changes in `reroll.py`.
+This guide covers a fresh Android phone and a fresh Mac checkout. It also
+explains how to calibrate the script when the phone uses a different display
+size or aspect ratio.
 
 ## 1. Install the Mac tools
 
@@ -24,8 +24,9 @@ uv --version
 ## 2. Prepare Balatro on the phone
 
 1. Install Balatro and open it once.
-2. Set the phone display to landscape and confirm the game is rendered at
-   2400x1080.
+2. Set the phone display to landscape. The reference setup is 2400x1080, but
+   other sizes can work after calibration (see [Calibrate a different
+   display](#calibrate-a-different-display)).
 3. Open **Settings > About phone** and tap **Build number** seven times if
    Developer options are not already enabled.
 4. In **Developer options**, enable **Wireless debugging**.
@@ -117,14 +118,58 @@ again:
 
 The new address replaces the local value in `.adb_addr`.
 
-## If the layout is different
+## Calibrate a different display
 
-The current script has fixed coordinates for 2400x1080 landscape mode. If a
-different phone or display scaling is used, save a screenshot:
+The script does not automatically scale coordinates. It reads a screenshot at
+the phone's real output size, so every coordinate must describe that same
+image. Start by checking the dimensions ADB reports:
 
 ```sh
+adb shell wm size
 adb exec-out screencap -p > screen.png
+file screen.png
 ```
 
-Then compare it with `ref_charm_blind_screen.png` and update the coordinate
-constants near the top of `reroll.py` before running the loop.
+Open `screen.png` and make sure the game is actually in landscape. If the
+display has the same 20:9 ratio as 2400x1080, you can scale the reference
+coordinates with:
+
+```text
+new_x = old_x * new_width  / 2400
+new_y = old_y * new_height / 1080
+```
+
+Round the results to whole pixels. If the aspect ratio is different, do not
+use a single scale factor: Balatro may be letterboxed or shifted. Measure the
+buttons and card centres directly from `screen.png` instead.
+
+Update the coordinate block near the top of `reroll.py`. It includes the
+buttons and tag locations (`OPTIONS`, `NEW_RUN`, `PLAY`, `SMALL_TAG`,
+`BIG_TAG`, `SMALL_SKIP`, `BIG_SKIP`), the blind-state sample pixels, the pack
+card centres, and the tooltip/pack boxes. Also update `SCREEN_W` to the exact
+width reported by the screenshot. `BAND`, `PACK_BAND`, `PACK_BG_BOX`, and
+`ICON_R` must use the same coordinate system too.
+
+Keep the color thresholds (`CHARM_YES`, `CHARM_NO`, and `PURPLE_HUE`) unchanged
+for the first test. Only adjust them if the classifier is wrong after the
+coordinates are correct.
+
+Before starting the full loop, test the classifier against the saved frame:
+
+```sh
+.venv/bin/python -c "import reroll; from PIL import Image; im=Image.open('screen.png').convert('RGB'); print(reroll.classify(im, reroll.SMALL_TAG), reroll.classify(im, reroll.BIG_TAG))"
+```
+
+The result should be `yes`, `no`, or `maybe` for each tag. Test the actual
+button coordinates with Balatro open and watch the first cycle closely. Stop
+with `Ctrl+C` if a tap lands outside its target, then adjust the corresponding
+constant and capture another frame.
+
+The original layout is still available for comparison:
+
+```sh
+open ref_charm_blind_screen.png
+```
+
+Once the screen, tags, buttons, and Arcana cards line up, run the command from
+the previous section.
