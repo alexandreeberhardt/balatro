@@ -66,6 +66,8 @@ not required for the core detection path.
 - A 2400x1080 landscape display (the current coordinates assume this exactly)
 
 The one-time setup is documented in [FirstTime.md](FirstTime.md).
+Coding agents can use the repository-specific [agent guide](AGENTS.md) for the
+full setup and calibration workflow.
 
 ## Files
 
@@ -75,6 +77,7 @@ The one-time setup is documented in [FirstTime.md](FirstTime.md).
 | `run.sh` | Connects to ADB, prepares the virtual environment, and starts the loop |
 | `notify_soul.sh` | Optional macOS notification and sound when The Soul is found |
 | `banner.png` | README banner image |
+| `AGENTS.md` | Repository context and agent workflow |
 | `tags/` | Learned tag crops and signatures used for log labels |
 | `ref_charm_blind_screen.png` | Calibration/reference screenshot |
 | `requirements.txt` | Python dependency list (`Pillow`) |
