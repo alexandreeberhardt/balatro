@@ -372,10 +372,15 @@ def check_pack_fast(n, label, retap=None):
     time.sleep(0.7)
     idx2, _ = find_soul(grab_band(*PACK_BAND))
     im = screenshot()
-    if idx2 != idx or "arcana" not in pack_label(im):
+    if idx2 != idx:
         print(f"[{n}] {label}: candidat Soul non confirmé (idx2={idx2})", flush=True)
         im.save(f"{OUT}/debug_pack_{n}.png")
         return False
+    # OCR is only a warning: tesseract misreads "Arcana" often enough (e.g. "hrcana") that a
+    # real Soul was rejected on it once; the stable-frame check above is the real gate.
+    lbl = pack_label(im)
+    if "rcana" not in lbl:
+        print(f"[{n}] {label}: OCR libellé douteux ({lbl.strip()!r}), on sélectionne quand même", flush=True)
     im.save(f"{OUT}/soul_found.png")
     tap((PACK_CARDS_X[idx], PACK_CARDS_Y), 1.5, jitter=0)
     screenshot().save(f"{OUT}/soul_selected.png")

@@ -52,7 +52,11 @@ Each cycle grabs only the strip containing the blind tags and Skip buttons.
 That keeps the Wi-Fi transfer small while the next New Run menu is opening.
 The detector looks for Charm's purple pixels first and uses a tooltip OCR check
 for uncertain cases. If a Charm Tag is confirmed, the script skips to its blind,
-checks the Arcana Pack, and looks for The Soul by its dark blue card artwork.
+checks the Arcana Pack, and looks for The Soul by its blue card artwork
+(`r - b < 30` on the slot's mean color, which holds whatever the screen brightness).
+A candidate is confirmed on a stable frame 0.7 s later; the "Arcana Pack" label OCR
+is only logged as a warning, because tesseract misread it once ("hrcana") and a real
+Soul was rejected because of it.
 
 The tag images in [`tags/`](tags/) are a small learned library used to put names
 in the log. The color detector does the actual Charm check, so the library is
