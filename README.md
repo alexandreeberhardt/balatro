@@ -1,87 +1,105 @@
-# Balatro – reroll auto jusqu'à un joker légendaire (The Soul)
+# Balatro Soul Reroller
 
-Boucle ADB qui relance des parties (Plasma Deck / White Stake) jusqu'à ce qu'un
-**Charm Tag** soit présent sur le Small ou le Big Blind ET que le Mega Arcana Pack
-obtenu contienne **The Soul**.
+An ADB helper that keeps restarting Balatro runs until it finds a **Charm Tag**
+on the Small or Big Blind and then finds **The Soul** in the Arcana Pack it
+opens.
 
-## Pré-requis (une seule fois)
+> Built for a very specific setup: Balatro on a OnePlus 8T, running at
+> 2400x1080 in landscape mode. The script uses fixed screen coordinates.
 
-- `adb` (Android platform-tools), `tesseract` (`brew install tesseract`), `uv`.
-- Téléphone : OnePlus 8T, écran **2400x1080 en paysage** (toutes les coordonnées
-  du script sont en dur pour cette résolution).
-- Appairage ADB wifi (à refaire seulement si le Mac n'est plus appairé) :
-  1. Téléphone → Options développeur → Débogage sans fil → *Associer l'appareil avec un code*.
-  2. `adb pair 10.241.82.253:PORT_APPAIRAGE CODE_6_CHIFFRES`
-     (le port d'appairage est différent du port de connexion).
+![Reference frame with a Charm Tag on the Small Blind](ref_charm_blind_screen.png)
 
-## Lancer
+## Quick start
 
-1. Sur le téléphone : ouvrir Balatro, démarrer/être dans une run (n'importe quel
-   écran où le bouton **Options** est visible en bas à gauche). Deck et stake sont
-   ceux déjà sélectionnés dans le menu New Run (Plasma / White au moment de l'écriture).
-2. Débogage sans fil activé ; noter l'`IP:PORT` affiché (il change souvent).
-3. `./run.sh 10.241.82.253:41657` (ou `./run.sh` pour reprendre la dernière adresse).
-4. Le script s'arrête tout seul quand The Soul est trouvé, **la carte est
-   sélectionnée mais pas encore utilisée** : il reste à appuyer sur *Use* sur
-   le téléphone. Captures : `soul_found.png`, `soul_selected.png`.
+If this is your first phone, follow [FirstTime.md](FirstTime.md) first. Once
+the phone is paired and the local tools are installed:
 
-`Ctrl+C` pour arrêter. Le log s'accumule dans `reroll.log`.
+```sh
+./run.sh PHONE_IP:ADB_PORT
+```
 
-## Comment ça marche (`reroll.py`)
+For later runs, the last address is saved locally, so this is enough:
 
-Cycle rapide (~3,5 s par run) :
-1. `Play` → attente 2,4 s (transition + animation des cartes de blind).
-2. Capture **partielle** de l'écran : seules les lignes 840-1000 (icônes de tag +
-   boutons Skip) sont transférées, en raw+gzip (~400 Ko au lieu d'un PNG de 1,4 Mo ;
-   le wifi à ~1 Mo/s est le goulot). Pendant ce transfert, le script ouvre déjà
-   `Options → New Run` pour le run suivant (la capture est prise dans les 100
-   premières ms de la commande, avant l'apparition du menu).
-3. Vérifie que la carte du Small Blind est en place (bouton Skip rouge en haut et en bas).
-4. **Détecteur Charm** : part de pixels saturés de teinte 235-265° (le disque violet
-   du Charm Tag) dans chaque icône. Charm ≈ 240 ‰, tout le reste ≤ 63 ‰
-   (Polychrome). ≥ 150 → Charm ; ≤ 90 → non ; entre les deux → confirmation par OCR
-   du tooltip (tap sur l'icône, tesseract).
-5. Pas de Charm → `Play` (le menu New Run est déjà ouvert). Charm → `Back`, puis
-   (toujours en captures partielles, ~4 s pour le Small, ~7 s pour le Big) :
-   - Charm sur le Small Blind : *Skip Blind* → attente 2,2 s → capture des lignes
-     700-800 : pack Arcana ouvert si le fond de table est violet (teinte ~265° au
-     lieu du vert ~155°), puis recherche de The Soul (carte bleu foncé parmi des
-     tarots beiges : `r - b < 30` sur la couleur moyenne de chaque emplacement).
-   - Charm sur le Big Blind : skip du Small (à l'ante 1 aucun autre tag n'ouvre de
-     pack ; si le Small était aussi Charm, son pack est fermé), attente du bouton
-     Skip rouge du Big Blind, skip du Big → même vérification.
-   - Si un tap est avalé (pack/blind absent), il est rejoué une fois.
-   - Un candidat Soul est confirmé (frame stable 0,7 s plus tard + capture complète
-     + OCR "Arcana") avant d'être sélectionné.
+```sh
+./run.sh
+```
 
-Détails importants :
-- Balatro génère le seed à partir de la position du curseur au clic : les taps sont
-  légèrement aléatoires (`jitter`), sinon on retombe sur les mêmes runs.
-- Les icônes du Big Blind ("Upcoming") sont assombries ; le détecteur de teinte y est
-  insensible, contrairement à un histogramme couleur (abandonné).
-- `tags/` (bibliothèque d'icônes par histogramme) ne sert plus qu'à nommer les tags
-  dans le log ; elle n'est plus indispensable.
-- `adb shell settings put` et `wm size` sont bloqués sur ce téléphone (OxygenOS).
-  Balatro garde l'écran allumé (KEEP_SCREEN_ON) tant qu'il est au premier plan.
+Before starting, open Balatro and leave it on any screen where the **Options**
+button is visible. The selected deck and stake are used as-is; the original
+setup was Plasma Deck / White Stake.
 
-## Fichiers
+When The Soul is found, the script selects it and stops. It does not press
+**Use**, so finish that last tap on the phone yourself. Successful and failed
+captures are written locally as `soul_*.png` and `debug_*.png`; the run log is
+`reroll.log`.
 
-- `reroll.py` : la boucle. Coordonnées et seuils en haut du fichier.
-- `tags/` : bibliothèque d'icônes apprise (`tags.json` + crops PNG), utilisée
-  seulement pour nommer les tags dans le log.
-- `run.sh` : connexion ADB + venv + lancement.
-- `requirements.txt` : `pillow` (venv dans `.venv/`).
-- `.adb_addr` : dernière adresse IP:PORT utilisée.
-- `ref_charm_blind_screen.png` : capture de référence de l'écran de blinds avec un
-  Charm Tag sur le Small Blind (utile pour recalibrer les coordonnées/seuils).
-- `debug_*.png`, `soul_*.png` : captures produites par le script (échecs / succès).
+Stop the loop with `Ctrl+C`.
 
-## Si ça casse
+## What the loop does
 
-- Le script s'appuie sur des pixels fixes (bouton Select orange, Skip rouge, icônes
-  à (814,906) et (1176,968)). Si Balatro ou l'écran change, prendre une capture
-  (`adb exec-out screencap -p > s.png`) et ajuster les constantes en tête de `reroll.py`.
-- Pour vérifier le détecteur Charm sur une capture : 
-  `.venv/bin/python -c "import reroll; from PIL import Image; im=Image.open('s.png').convert('RGB'); print(reroll.classify(im, reroll.SMALL_TAG), reroll.classify(im, reroll.BIG_TAG))"`
-- Si les runs se ressemblent (même boss, mêmes tags), c'est le seed lié au curseur :
-  augmenter le `jitter` du tap sur Play.
+```text
+Play -> read blind tags -> Charm? -> skip to the blind
+  ^                                      |
+  |                                      v
+  +---------- no Charm <----- Arcana Pack -> The Soul?
+                                             |
+                                          found: select + stop
+```
+
+Each cycle grabs only the strip containing the blind tags and Skip buttons.
+That keeps the Wi-Fi transfer small while the next New Run menu is opening.
+The detector looks for Charm's purple pixels first and uses a tooltip OCR check
+for uncertain cases. If a Charm Tag is confirmed, the script skips to its blind,
+checks the Arcana Pack, and looks for The Soul by its dark blue card artwork.
+
+The tag images in [`tags/`](tags/) are a small learned library used to put names
+in the log. The color detector does the actual Charm check, so the library is
+not required for the core detection path.
+
+## Requirements
+
+- macOS with `adb`, `tesseract`, and [`uv`](https://docs.astral.sh/uv/)
+- An Android phone with Balatro installed
+- Wireless ADB enabled and the phone connected to the same network
+- A 2400x1080 landscape display (the current coordinates assume this exactly)
+
+The one-time setup is documented in [FirstTime.md](FirstTime.md).
+
+## Files
+
+| File | Purpose |
+| --- | --- |
+| `reroll.py` | Main detection and reroll loop |
+| `run.sh` | Connects to ADB, prepares the virtual environment, and starts the loop |
+| `notify_soul.sh` | Optional macOS notification and sound when The Soul is found |
+| `tags/` | Learned tag crops and signatures used for log labels |
+| `ref_charm_blind_screen.png` | Calibration/reference screenshot |
+| `requirements.txt` | Python dependency list (`Pillow`) |
+
+## Troubleshooting
+
+If the phone is not detected, check that wireless debugging is still enabled
+and reconnect with the current `IP:PORT` shown by Android. The pairing port and
+the connection port are different.
+
+If Balatro's layout changes, capture a frame and adjust the constants near the
+top of `reroll.py`:
+
+```sh
+adb exec-out screencap -p > screen.png
+```
+
+To test the Charm classifier against a saved frame:
+
+```sh
+.venv/bin/python -c "import reroll; from PIL import Image; im=Image.open('screen.png').convert('RGB'); print(reroll.classify(im, reroll.SMALL_TAG), reroll.classify(im, reroll.BIG_TAG))"
+```
+
+If every run looks suspiciously similar, increase the tap jitter in
+`reroll.py`. Balatro uses cursor position when generating a seed, so a little
+variation matters.
+
+## Disclaimer
+
+This is a personal automation script for Balatro. It is not affiliated with or
+endorsed by the game's developers.
